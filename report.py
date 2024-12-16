@@ -112,41 +112,36 @@ async def upload_file(file: UploadFile = File(...)):
 @app.post("/generate-report/")
 async def generate_report_endpoint(file: UploadFile = File(...), month: str = "January"):
     try:
-        # Read the input file
+        print(f"[DEBUG] Endpoint '/generate-report/' hit successfully", flush=True)
         input_file = BytesIO(await file.read())
-        # Generate the report
+        print(f"[DEBUG] File received: {file.filename}", flush=True)
+
         report_file_path = generate_report(input_file, month)
+        print(f"[DEBUG] Report generated at path: {report_file_path}", flush=True)
 
-        # Debug log to confirm file path
-        print(f"[DEBUG] Generated report path: {report_file_path}")
-
-        # Return file path to download later
-        return {"report_file": os.path.basename(report_file_path)}
+        return FileResponse(report_file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            filename=os.path.basename(report_file_path))
     except Exception as e:
-        print(f"[ERROR] Failed to generate report: {str(e)}")
+        print(f"[ERROR] Error in '/generate-report/': {str(e)}", flush=True)
         raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
+
 
 
 @app.get("/download-report/{report_file}")
 async def download_report(report_file: str):
     try:
-        # Construct the file path
+        print(f"[DEBUG] Endpoint '/download-report/' hit successfully", flush=True)
         file_path = os.path.join(UPLOAD_DIR, report_file)
+        print(f"[DEBUG] Looking for file at: {file_path}", flush=True)
 
-        # Debug log to confirm file path
-        print(f"[DEBUG] Downloading file from path: {file_path}")
-
-        # Check if the file exists
         if not os.path.exists(file_path):
-            print(f"[ERROR] File not found: {file_path}")
+            print(f"[DEBUG] File not found: {file_path}", flush=True)
             raise HTTPException(status_code=404, detail="File not found")
 
-        return FileResponse(
-            file_path,
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            filename=os.path.basename(file_path)
-        )
+        print(f"[DEBUG] Returning file: {file_path}", flush=True)
+        return FileResponse(file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            filename=os.path.basename(file_path))
     except Exception as e:
-        print(f"[ERROR] Failed to download report: {str(e)}")
+        print(f"[ERROR] Error in '/download-report/': {str(e)}", flush=True)
         raise HTTPException(status_code=500, detail=f"Error downloading report: {str(e)}")
 
