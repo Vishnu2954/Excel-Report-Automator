@@ -33,72 +33,43 @@ def generate_report(input_file: BytesIO, month: str) -> str:
 
 
 def create_charts(sheet, min_row, max_row, min_column, max_column):
-    category = Reference(sheet, 
-                         min_col=min_column, 
-                         max_col=min_column, 
-                         min_row=min_row + 1, 
-                         max_row=max_row)
-
-    data = Reference(sheet, 
-                     min_col=min_column + 1, 
-                     max_col=max_column, 
-                     min_row=min_row, 
-                     max_row=max_row)
+    data = Reference(sheet, min_col=min_column + 1, max_col=max_column, min_row=min_row, max_row=max_row)
+    category = Reference(sheet, min_col=min_column, max_col=min_column, min_row=min_row + 1, max_row=max_row)
 
     # Bar Chart
     barchart = BarChart()
-    barchart.type = "col"  
-    barchart.style = 10    
-    barchart.title = "Sales by Product Line and Gender"
-    barchart.y_axis.title = 'Sales Volume'
-    barchart.x_axis.title = 'Product Line'
-    
     barchart.add_data(data, titles_from_data=True)
     barchart.set_categories(category)
+    barchart.title = "Sales vs Product Line"
+    barchart.x_axis.title = "Product Line"
+    barchart.y_axis.title = "Sales"
     sheet.add_chart(barchart, 'B12')
 
     # Line Chart
     linechart = LineChart()
-    linechart.title = "Sales Trend by Gender"
-    linechart.y_axis.title = 'Sales Volume'
-    linechart.x_axis.title = 'Product Line'
-    
     linechart.add_data(data, titles_from_data=True)
     linechart.set_categories(category)
+    linechart.title = "Trend Analysis"
+    linechart.x_axis.title = "Product Line"
+    linechart.y_axis.title = "Sales"
     sheet.add_chart(linechart, 'L12')
 
-    # Pie Chart 
+    # Pie Chart
     piechart = PieChart()
-    piechart.title = "Sales Distribution by Product Line"
-    total_data = []
-    for col in range(min_column + 1, max_column + 1):
-        column_total = sum(sheet.cell(row=row, column=col).value 
-                           for row in range(min_row + 1, max_row + 1))
-        total_data.append(column_total)
-    
-    pie_ref = Reference(sheet, 
-                        min_col=min_column + 1, 
-                        max_col=max_column, 
-                        min_row=1, 
-                        max_row=1)
-    
-    pie_data = Reference(sheet, 
-                         min_row=2, 
-                         min_col=min_column + 1, 
-                         max_col=max_column,
-                         values=total_data)
-    
-    piechart.add_data(pie_data)
-    piechart.set_categories(pie_ref)
+    piechart.add_data(data, titles_from_data=True)
+    piechart.set_categories(category)
+    piechart.title = "Product Line Distribution"
     sheet.add_chart(piechart, 'B30')
 
     # Doughnut Chart
     doughnut_chart = DoughnutChart()
+    donut_data = Reference(sheet, min_col=max_column, max_col=max_column, min_row=min_row + 1, max_row=max_row)
+    donut_labels = Reference(sheet, min_col=min_column, max_col=min_column, min_row=min_row + 1, max_row=max_row)
+    doughnut_chart.add_data(donut_data, titles_from_data=False)
+    doughnut_chart.set_categories(donut_labels)
     doughnut_chart.title = "Sales Distribution (Doughnut)"
-    doughnut_chart.add_data(pie_data)
-    doughnut_chart.set_categories(pie_ref)
     sheet.add_chart(doughnut_chart, 'L30')
-
+    
 
 def apply_currency_format(sheet, min_row, max_row, min_column, max_column):
     currency_style = NamedStyle(name="Currency", number_format="\u20B9#,##0.00")
