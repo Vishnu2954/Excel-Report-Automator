@@ -112,27 +112,41 @@ async def upload_file(file: UploadFile = File(...)):
 @app.post("/generate-report/")
 async def generate_report_endpoint(file: UploadFile = File(...), month: str = "January"):
     try:
+        # Read the input file
         input_file = BytesIO(await file.read())
+        # Generate the report
         report_file_path = generate_report(input_file, month)
 
-        return FileResponse(report_file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            filename=os.path.basename(report_file_path))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
+        # Debug log to confirm file path
+        print(f"[DEBUG] Generated report path: {report_file_path}")
 
+        # Return file path to download later
+        return {"report_file": os.path.basename(report_file_path)}
+    except Exception as e:
+        print(f"[ERROR] Failed to generate report: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
 
 
 @app.get("/download-report/{report_file}")
 async def download_report(report_file: str):
     try:
+        # Construct the file path
         file_path = os.path.join(UPLOAD_DIR, report_file)
-        print(f"Looking for file at: {file_path}")
+
+        # Debug log to confirm file path
+        print(f"[DEBUG] Downloading file from path: {file_path}")
+
+        # Check if the file exists
         if not os.path.exists(file_path):
+            print(f"[ERROR] File not found: {file_path}")
             raise HTTPException(status_code=404, detail="File not found")
 
-        return FileResponse(file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                            filename=os.path.basename(file_path))
-
+        return FileResponse(
+            file_path,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            filename=os.path.basename(file_path)
+        )
     except Exception as e:
+        print(f"[ERROR] Failed to download report: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error downloading report: {str(e)}")
 
