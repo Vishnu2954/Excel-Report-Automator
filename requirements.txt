@@ -1,3 +1,4 @@
 ﻿fastapi
 uvicorn
 openpyxl
+jinja2
