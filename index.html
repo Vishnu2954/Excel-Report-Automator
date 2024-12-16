@@ -267,93 +267,101 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
-    <script>
-        const fileInput = document.getElementById('fileInput');
-        const fileNameDisplay = document.getElementById('fileName');
-        const generateBtn = document.getElementById('generateBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const reportView = document.getElementById('reportView');
-        const loadingOverlay = document.getElementById('loadingOverlay');
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.2/xlsx.full.min.js"></script>
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const fileNameDisplay = document.getElementById('fileName');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const reportView = document.getElementById('reportView');
+    const loadingOverlay = document.getElementById('loadingOverlay');
 
-        let uploadedFile = null;
-        let processedData = null;
+    let uploadedFile = null;
+    let processedData = null;
 
-        function showLoading() {
-            loadingOverlay.style.display = 'flex';
+    // Show loading overlay
+    function showLoading() {
+        loadingOverlay.style.display = 'flex';
+    }
+
+    // Hide loading overlay
+    function hideLoading() {
+        loadingOverlay.style.display = 'none';
+    }
+
+    // Handle file selection
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            uploadedFile = file;
+            fileNameDisplay.textContent = `Selected: ${file.name}`;
+            generateBtn.disabled = false;
+            reportView.innerHTML = '<p style="color: #6b7280; text-align: center;">File ready for processing</p>';
+        }
+    });
+
+    // Generate report when generate button is clicked
+    generateBtn.addEventListener('click', function() {
+        if (!uploadedFile) {
+            alert('Please upload a file first');
+            return;
         }
 
-        function hideLoading() {
-            loadingOverlay.style.display = 'none';
-        }
-
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                uploadedFile = file;
-                fileNameDisplay.textContent = `Selected: ${file.name}`;
-                generateBtn.disabled = false;
-                reportView.innerHTML = '<p style="color: #6b7280; text-align: center;">File ready for processing</p>';
-            }
-        });
-
-        generateBtn.addEventListener('click', function() {
-            if (!uploadedFile) {
-                alert('Please upload a file first');
-                return;
-            }
-
-            showLoading();
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                setTimeout(() => {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    
-                    processedData = XLSX.utils.sheet_to_json(worksheet);
-                    
-                    // Enhanced Report Preview
-                    reportView.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                            <h3 style="color: var(--primary-color);">Report Insights</h3>
-                            <div>
-                                <span style="background: var(--gradient-primary); color: white; padding: 5px 10px; border-radius: 5px;">
-                                    Total Rows: ${processedData.length}
-                                </span>
-                            </div>
-                        </div>
-                        <div style="max-height: 200px; overflow-y: auto;">
-                            <pre style="background: white; padding: 10px; border-radius: 10px; font-size: 0.8rem;">
-${JSON.stringify(processedData.slice(0, 5), null, 2)}
-                            </pre>
-                        </div>
-                    `;
-                    
-                    downloadBtn.disabled = false;
-                    hideLoading();
-                }, 1000);
-            };
-            reader.readAsArrayBuffer(uploadedFile);
-        });
-
-        downloadBtn.addEventListener('click', function() {
-            if (!processedData) {
-                alert('No processed data available');
-                return;
-            }
-
-            showLoading();
+        showLoading();
+        const reader = new FileReader();
+        reader.onload = function(e) {
             setTimeout(() => {
-                const worksheet = XLSX.utils.json_to_sheet(processedData);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
-                
-                XLSX.writeFile(workbook, 'enhanced_report.xlsx');
-                hideLoading();
-            }, 1000);
-        });
-    </script>
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+
+                // Extract data from the first sheet
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                processedData = XLSX.utils.sheet_to_json(worksheet);
+
+                // Update the report preview with insights
+                reportView.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <h3 style="color: var(--primary-color);">Report Insights</h3>
+                        <div>
+                            <span style="background: var(--gradient-primary); color: white; padding: 5px 10px; border-radius: 5px;">
+                                Total Rows: ${processedData.length}
+                            </span>
+                        </div>
+                    </div>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        <pre style="background: white; padding: 10px; border-radius: 10px; font-size: 0.8rem;">
+${JSON.stringify(processedData.slice(0, 5), null, 2)}
+                        </pre>
+                    </div>
+                `;
+
+                downloadBtn.disabled = false;  // Enable download button after processing
+                hideLoading();  // Hide loading overlay
+            }, 1000);  // Simulate loading delay for the example
+        };
+        reader.readAsArrayBuffer(uploadedFile);  // Read the file as an array buffer
+    });
+
+    // Handle report download when download button is clicked
+    downloadBtn.addEventListener('click', function() {
+        if (!processedData) {
+            alert('No processed data available');
+            return;
+        }
+
+        showLoading();
+        setTimeout(() => {
+            // Generate the Excel file from processed data
+            const worksheet = XLSX.utils.json_to_sheet(processedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
+
+            // Save the file as Excel
+            XLSX.writeFile(workbook, 'enhanced_report.xlsx');
+            hideLoading();  // Hide loading overlay after file is generated
+        }, 1000);  // Simulate loading delay for the example
+    });
+</script>
 </body>
 </html>
