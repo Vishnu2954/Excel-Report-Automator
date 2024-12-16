@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from io import BytesIO
 from openpyxl import load_workbook
 from openpyxl.chart import (BarChart, LineChart, PieChart, DoughnutChart, Reference)
@@ -11,8 +12,13 @@ import os
 import tempfile
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="."), name="static")
 templates = Jinja2Templates(directory=".")
 UPLOAD_DIR = "uploads"
+
+@app.get("/index")
+async def get_index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 def generate_report(input_file: BytesIO, month: str) -> str:
@@ -109,9 +115,11 @@ async def generate_report_endpoint(file: UploadFile = File(...), month: str = "J
         input_file = BytesIO(await file.read())
         report_file_path = generate_report(input_file, month)
 
-        return {"message": "Report generated successfully", "report_file": report_file_path}
+        return FileResponse(report_file_path, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            filename=os.path.basename(report_file_path))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
+
 
 
 @app.get("/download-report/{report_file}")
