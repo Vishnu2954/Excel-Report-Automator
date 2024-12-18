@@ -27,9 +27,10 @@ def generate_report(input_file: BytesIO, month: str) -> str:
     wb = load_workbook(input_file)
     sheet = wb.active
 
+    # Add titles, charts, and formatting
+    add_report_title(sheet, month, sheet.max_column)
     create_charts(sheet, sheet.min_row, sheet.max_row, sheet.min_column, sheet.max_column)
     apply_currency_format(sheet, sheet.min_row, sheet.max_row, sheet.min_column, sheet.max_column)
-    add_report_title(sheet, month, sheet.max_column)
 
     # Save report to temporary file
     report_file = tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx", dir=UPLOAD_DIR)
@@ -38,7 +39,22 @@ def generate_report(input_file: BytesIO, month: str) -> str:
     return report_file_path
 
 
+def add_report_title(sheet, month, max_column):
+    # Add a bold title for the report
+    sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_column)
+    sheet['K1'] = "Sales Report"
+    sheet['K1'].font = Font(name='Calibri', bold=True, size=20)
+    sheet['K1'].alignment = Alignment(horizontal="center")
+
+    # Add the month below the title
+    sheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=max_column)
+    sheet['K2'] = f"Month: {month}"
+    sheet['K2'].font = Font(name='Calibri', bold=True, size=12)
+    sheet['K2'].alignment = Alignment(horizontal="center")
+
+
 def create_charts(sheet, min_row, max_row, min_column, max_column):
+    # Set data for charts
     data = Reference(sheet, min_col=min_column + 1, max_col=max_column, min_row=min_row, max_row=max_row)
     category = Reference(sheet, min_col=min_column, max_col=min_column, min_row=min_row + 1, max_row=max_row)
 
@@ -49,7 +65,7 @@ def create_charts(sheet, min_row, max_row, min_column, max_column):
     barchart.title = "Sales vs Product Line"
     barchart.x_axis.title = "Product Line"
     barchart.y_axis.title = "Sales"
-    sheet.add_chart(barchart, 'B12')
+    sheet.add_chart(barchart, f"{get_column_letter(max_column + 2)}{min_row}")
 
     # Line Chart
     linechart = LineChart()
@@ -58,24 +74,21 @@ def create_charts(sheet, min_row, max_row, min_column, max_column):
     linechart.title = "Trend Analysis"
     linechart.x_axis.title = "Product Line"
     linechart.y_axis.title = "Sales"
-    sheet.add_chart(linechart, 'L12')
+    sheet.add_chart(linechart, f"{get_column_letter(max_column + 10)}{min_row}")
 
     # Pie Chart
     piechart = PieChart()
     piechart.add_data(data, titles_from_data=True)
     piechart.set_categories(category)
     piechart.title = "Product Line Distribution"
-    sheet.add_chart(piechart, 'B30')
+    sheet.add_chart(piechart, f"{get_column_letter(max_column + 2)}{max_row + 10}")
 
     # Doughnut Chart
     doughnut_chart = DoughnutChart()
-    donut_data = Reference(sheet, min_col=max_column, max_col=max_column, min_row=min_row + 1, max_row=max_row)
-    donut_labels = Reference(sheet, min_col=min_column, max_col=min_column, min_row=min_row + 1, max_row=max_row)
-    doughnut_chart.add_data(donut_data, titles_from_data=False)
-    doughnut_chart.set_categories(donut_labels)
+    doughnut_chart.add_data(data, titles_from_data=False)
+    doughnut_chart.set_categories(category)
     doughnut_chart.title = "Sales Distribution (Doughnut)"
-    sheet.add_chart(doughnut_chart, 'L30')
-
+    sheet.add_chart(doughnut_chart, f"{get_column_letter(max_column + 10)}{max_row + 10}")
 
 def apply_currency_format(sheet, min_row, max_row, min_column, max_column):
     currency_style = NamedStyle(name="Currency", number_format="\u20B9#,##0.00")
@@ -90,14 +103,6 @@ def apply_currency_format(sheet, min_row, max_row, min_column, max_column):
     sheet[f'{get_column_letter(min_column)}{max_row + 1}'] = 'Total'
     sheet[f'{get_column_letter(min_column)}{max_row + 1}'].font = Font(bold=True)
 
-
-def add_report_title(sheet, month, max_column):
-    sheet['A1'] = 'Sales Report'
-    sheet['A2'] = month
-    sheet['A1'].font = Font('Calibri', bold=True, size=20)
-    sheet['A1'].alignment = Alignment(horizontal="center")
-    sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_column)
-    sheet['A2'].font = Font('Calibri', bold=True, size=12)
 
 
 @app.post("/uploadfile/")
