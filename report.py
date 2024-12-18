@@ -4,7 +4,6 @@ from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from io import BytesIO
-import matplotlib.pyplot as plt
 from openpyxl import load_workbook
 from openpyxl.chart import (BarChart, LineChart, PieChart, DoughnutChart, Reference)
 from openpyxl.styles import Font, Alignment, NamedStyle
