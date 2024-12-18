@@ -15,9 +15,8 @@ app = FastAPI()
 
 # Use Render's or system's temporary directory
 UPLOAD_DIR = os.environ.get("TMPDIR", tempfile.gettempdir())
-templates = Jinja2Templates(directory="templates")  # Ensure templates directory exists
-app.mount("/static", StaticFiles(directory="static"), name="static")  # Ensure static directory exists
-
+app.mount("/static", StaticFiles(directory="."), name="static") 
+templates = Jinja2Templates(directory=".") 
 
 @app.get("/index")
 async def get_index(request: Request):
