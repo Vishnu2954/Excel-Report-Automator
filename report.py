@@ -1,5 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from io import BytesIO
 from openpyxl import load_workbook
 from openpyxl.chart import (BarChart, LineChart, PieChart, Reference)
@@ -13,6 +15,8 @@ import uuid
 
 # Initialize FastAPI app
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="."), name="static")
+templates = Jinja2Templates(directory=".")
 
 # CORS Middleware to allow frontend communication
 app.add_middleware(
@@ -23,10 +27,12 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-# Upload directory configuration
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+@app.get("/index")
+async def get_index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 def generate_report(input_file: BytesIO, month: str = None) -> str:
     """
