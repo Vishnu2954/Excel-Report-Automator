@@ -21,15 +21,24 @@ async def get_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-def generate_report(input_file: BytesIO, month: str) -> str:
+def generate_report(input_file: BytesIO, month: str) -> BytesIO:
+    # Load workbook from the input file
     wb = load_workbook(input_file)
     sheet = wb.active
-    create_charts(sheet, sheet.min_row, sheet.max_row, sheet.min_column, sheet.max_column)
-    apply_currency_format(sheet, sheet.min_row, sheet.max_row, sheet.min_column, sheet.max_column)
+
+    # Add titles and charts
     add_report_title(sheet, month, sheet.max_column)
-    report_file_path = os.path.join(UPLOAD_DIR, f"report_{month}.xlsx")
-    wb.save(report_file_path)
-    return report_file_path
+    apply_currency_format(sheet, sheet.min_row, sheet.max_row, sheet.min_column, sheet.max_column)
+    create_charts(sheet, sheet.min_row, sheet.max_row, sheet.min_column, sheet.max_column)
+
+    # Save workbook to BytesIO
+    output_stream = BytesIO()
+    wb.save(output_stream)
+    wb.close()  # Close the workbook after saving
+    output_stream.seek(0)  # Reset stream position to the beginning
+    return output_stream
+
+
 
 
 def create_charts(sheet, min_row, max_row, min_column, max_column):
@@ -86,12 +95,12 @@ def apply_currency_format(sheet, min_row, max_row, min_column, max_column):
 
 
 def add_report_title(sheet, month, max_column):
-    sheet['K1'] = 'Sales Report'
-    sheet['K2'] = month
-    sheet['K1'].font = Font('Calibri', bold=True, size=20)
-    sheet['K1'].alignment = Alignment(horizontal="center")
-    sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_column)
-    sheet['K2'].font = Font('Calibri', bold=True, size=12)
+    sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_column)  # Merge cells for title
+    sheet['A1'] = 'Sales Report'
+    sheet['A2'] = month
+    sheet['A1'].font = Font(name='Calibri', bold=True, size=20)
+    sheet['A1'].alignment = Alignment(horizontal="center")
+    sheet['A2'].font = Font(name='Calibri', bold=True, size=12)
 
 
 @app.post("/uploadfile/")
